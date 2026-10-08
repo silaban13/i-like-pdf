@@ -50,3 +50,5 @@ Isi tersebut sudah mencakup nama proyek, latar belakang, permasalahan, tujuan si
 Saran: Jika tugas ini untuk proposal atau perencanaan proyek, gunakan kata akan dikembangkan pada bagian tujuan dan ruang lingkup. Jika tugasnya melaporkan proyek yang sudah dibuat, gunakan telah dikembangkan.
 
 
+git branch -M main
+git branch
