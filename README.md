@@ -52,3 +52,8 @@ Saran: Jika tugas ini untuk proposal atau perencanaan proyek, gunakan kata akan 
 
 git branch -M main
 git branch
+
+
+fronend
+
+npm install react-router-dom

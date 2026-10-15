@@ -1,0 +1,6 @@
+{
+  "name": "I-LIKE PDF - Solusi Pintar Kelola Dokumen",
+  "description": "Platform all-in-one PDF Tools Suite: Merge PDF, Compress PDF, PDF to Word, dan OCR cepat dengan manajemen file riwayat aman.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
