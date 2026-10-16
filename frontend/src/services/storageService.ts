@@ -2,17 +2,12 @@
 import { ProcessedFile } from '../types';
 
 const STORAGE_KEY = 'ilike_pdf_history_v1';
-
 export function getFileHistory(): ProcessedFile[] {
   try {
     const data = localStorage.getItem(STORAGE_KEY);
-
     if (!data) return [];
-
     const parsed: unknown = JSON.parse(data);
-
     if (!Array.isArray(parsed)) return [];
-
     return parsed as ProcessedFile[];
   } catch (error) {
     console.error('Gagal memuat riwayat file:', error);
@@ -23,8 +18,6 @@ export function getFileHistory(): ProcessedFile[] {
 export function saveFileHistoryItem(item: ProcessedFile): void {
   try {
     const list = getFileHistory();
-
-    // Hindari ID ganda ketika menyimpan riwayat.
     const updated = [
       item,
       ...list.filter((existing) => existing.id !== item.id),
@@ -59,7 +52,6 @@ export function formatBytes(
 ): string {
   if (!Number.isFinite(bytes) || bytes < 0) return '0 Bytes';
   if (bytes === 0) return '0 Bytes';
-
   const k = 1024;
   const precision = Math.max(0, decimals);
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];

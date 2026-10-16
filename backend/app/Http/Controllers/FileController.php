@@ -15,9 +15,11 @@ class FileController extends Controller
         ]);
 
         $file = $request->file('file');
-
         $fileName = $file->getClientOriginalName();
-        $filePath = $file->store('temporary');
+        $filePath = $file->storeAs(
+            'temporary',
+            $fileName
+        );
 
         return response()->json([
             'success' => true,
@@ -33,12 +35,13 @@ class FileController extends Controller
             'file_path' => [
                 'required',
                 'string',
-                'regex:/^temporary\/[A-Za-z0-9._-]+\.(doc|docx)$/i',
+                'regex:/^temporary\/[A-Za-z0-9._ -]+\.(doc|docx)$/i',
             ],
+            'file_name' => 'required|string|max:255',
         ]);
 
         $filePath = $request->input('file_path');
-
+        $originalName = $request->input('file_name');
         if (!Storage::exists($filePath)) {
             return response()->json([
                 'success' => false,
@@ -49,31 +52,55 @@ class FileController extends Controller
 
         $inputPath = Storage::path($filePath);
         $outputDir = storage_path('app/private/converted');
-
         if (!is_dir($outputDir)) {
             mkdir($outputDir, 0755, true);
         }
 
         $soffice = 'C:\Program Files\LibreOffice\program\soffice.com';
-        $pdfName = pathinfo($inputPath, PATHINFO_FILENAME) . '.pdf';
-        $pdfPath = $outputDir . DIRECTORY_SEPARATOR . $pdfName;
-
-        if (file_exists($pdfPath)) {
-            unlink($pdfPath);
+        $baseName = pathinfo($originalName, PATHINFO_FILENAME);
+        $baseName = preg_replace(
+            '/[<>:"\/\\\\|?*\x00-\x1F]/',
+            '_',
+            $baseName
+        );
+        $baseName = trim($baseName, ". ");
+        if ($baseName === '') {
+            $baseName = 'Dokumen';
         }
 
-        $command = '"' . $soffice . '" --headless --convert-to pdf --outdir "' .
-        $outputDir . '" "' . $inputPath . '"';
+        $pdfName = $baseName . '.pdf';
+        $counter = 1;
+        while (file_exists($outputDir . DIRECTORY_SEPARATOR . $pdfName)) {
+            $pdfName = $baseName . '(' . $counter . ').pdf';
+            $counter++;
+        }
+
+        $pdfPath = $outputDir . DIRECTORY_SEPARATOR . $pdfName;
+        $generatedName = pathinfo($inputPath, PATHINFO_FILENAME) . '.pdf';
+        $generatedPath = $outputDir . DIRECTORY_SEPARATOR . $generatedName;
+        $command = '"' . $soffice . '" --headless --convert-to pdf --outdir "'
+            . $outputDir . '" "' . $inputPath . '"';
+
         $result = [];
         $code = 0;
         exec($command . ' 2>&1', $result, $code);
-
-        if (!file_exists($pdfPath) || filesize($pdfPath) === 0) {
+        if (
+            $code !== 0 ||
+            !file_exists($generatedPath) ||
+            filesize($generatedPath) === 0
+        ) {
             return response()->json([
                 'success' => false,
                 'message' => 'Konversi gagal',
                 'exit_code' => $code,
                 'detail' => implode(PHP_EOL, $result),
+            ], 500);
+        }
+
+        if (!rename($generatedPath, $pdfPath)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyimpan nama file PDF',
             ], 500);
         }
 
@@ -83,7 +110,6 @@ class FileController extends Controller
             'file_name' => $pdfName,
             'file_path' => 'converted/' . $pdfName,
         ]);
-
     }
 
     public function pdfToWord(Request $request)
@@ -135,14 +161,16 @@ class FileController extends Controller
             'app/private/converted/' . $filename
         );
 
-        if (!file_exists($filePath)) {
+        if (!is_file($filePath)) {
             return response()->json([
                 'success' => false,
                 'message' => 'File tidak ditemukan',
             ], 404);
         }
 
-        return response()->download($filePath);
+        return response()
+            ->download($filePath, $filename)
+            ->deleteFileAfterSend(true);
     }
 
     public function delete($filename)

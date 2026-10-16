@@ -9,7 +9,6 @@ export async function mergePdfFiles(files: File[]): Promise<{ blob: Blob; pageCo
 
   const mergedPdf = await PDFDocument.create();
   let totalPages = 0;
-
   for (const file of files) {
     const arrayBuffer = await file.arrayBuffer();
     const loadedPdf = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });

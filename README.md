@@ -57,3 +57,9 @@ git branch
 fronend
 
 npm install react-router-dom
+
+Tekan Ctrl + Shift + P.
+
+
+
+Ketik TypeScript: Restart TS Server.

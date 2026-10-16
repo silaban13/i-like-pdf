@@ -42,80 +42,100 @@ export const WordtoPDF: React.FC<WordToPdfProps> = ({ currentUser, initialFile, 
     }
 };
 
-  const handleConvert = async () => {
-    if (!file) {
-        setError('Silakan pilih file Word terlebih dahulu.');
-        return;
-    }
-
-    try {
-        setIsConverting(true);
-        setError(null);
-        const uploadResponse = await uploadWordFile(file);
-        if (!uploadResponse.success || !uploadResponse.file_path) {
-            throw new Error(
-            uploadResponse.message || 'Gagal mengunggah file Word.'
-          );
+    const handleConvert = async () => {
+        if (!file) {
+            setError('Silakan pilih file Word terlebih dahulu.');
+            return;
         }
 
-        const convertResponse = await convertWordToPdf(
-            uploadResponse.file_path
-        );
-
-        if (!convertResponse.success || !convertResponse.file_name) {
-            throw new Error(
-                convertResponse.message || 'Konversi Word ke PDF gagal.'
+        try {
+            setIsConverting(true);
+            setError(null);
+            const uploadResponse = await uploadWordFile(file);
+            if (!uploadResponse.success || !uploadResponse.file_path) {
+                throw new Error(
+                uploadResponse.message || 'Gagal mengunggah file Word.'
             );
+            }
+
+            const convertResponse = await convertWordToPdf(
+                uploadResponse.file_path,
+                file.name
+            );
+
+            if (!convertResponse.success || !convertResponse.file_name) {
+                throw new Error(
+                    convertResponse.message || 'Konversi Word ke PDF gagal.'
+                );
+            }
+
+            const pdfBlob = await downloadConvertedFile(
+                convertResponse.file_name
+            );
+
+            const url = URL.createObjectURL(pdfBlob);
+            setResult({
+                url,
+                fileName: convertResponse.file_name,
+                originalSize: file.size,
+                pdfSize: pdfBlob.size,
+            });
+
+
+            const historyItem: ProcessedFile = {
+                id: 'hist_' + Date.now(),
+                fileName: convertResponse.file_name,
+                tool: 'word-to-pdf',
+                originalSize: file.size,
+                processedSize: pdfBlob.size,
+                createdAt: new Date().toISOString(),
+                mimeType: 'application/pdf',
+            };
+
+            saveFileHistoryItem(historyItem);
+        } catch (err: unknown) {
+            console.error('Word to PDF error:', err);
+            setError(
+                err instanceof Error ? err.message : 'Gagal mengonversi Word ke PDF. Silakan coba lagi.'
+            );
+        } finally {
+            setIsConverting(false);
+        }
+    };
+
+    const handleDownload = () => {
+        if (!result) return;
+        const fileUrl = result.url;
+        const link = document.createElement('a');
+        link.href = fileUrl;
+        link.download = result.fileName;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setResult(null);
+        setFile(null);
+        setError(null);
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
         }
 
-        const pdfBlob = await downloadConvertedFile(
-            convertResponse.file_name
-        );
+        window.setTimeout(() => {
+            URL.revokeObjectURL(fileUrl);
+        }, 1000);
+    };
 
-        const url = URL.createObjectURL(pdfBlob);
-        setResult({
-            url,
-            fileName: convertResponse.file_name,
-            originalSize: file.size,
-            pdfSize: pdfBlob.size,
-        });
+    const resetTool = () => {
+        if (result?.url) {
+            URL.revokeObjectURL(result.url);
+        }
 
-
-        const historyItem: ProcessedFile = {
-            id: 'hist_' + Date.now(),
-            fileName: convertResponse.file_name,
-            tool: 'word-to-pdf',
-            originalSize: file.size,
-            processedSize: pdfBlob.size,
-            createdAt: new Date().toISOString(),
-            mimeType: 'application/pdf',
-        };
-
-
-        saveFileHistoryItem(historyItem);
-    } catch (err: unknown) {
-        console.error('Word to PDF error:', err);
-        setError(
-            err instanceof Error ? err.message : 'Gagal mengonversi Word ke PDF. Silakan coba lagi.'
-        );
-    } finally {
-        setIsConverting(false);
-    }
-  };
-
-  const resetTool = () => {
-    if (result?.url) {
-        URL.revokeObjectURL(result.url);
-    }
-
-    setFile(null);
-    setResult(null);
-    setError(null);
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
+        setFile(null);
+        setResult(null);
+        setError(null);
+        if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+        }
+    };
 
   return (
     <div className="w-full max-w-5xl mx-auto px-4 py-6">
@@ -207,13 +227,11 @@ export const WordtoPDF: React.FC<WordToPdfProps> = ({ currentUser, initialFile, 
                     <p className="text-xs text-purple-300/60"> Ukuran hasil: {formatBytes(result.pdfSize)} </p>
                 </div>
                 <div className="flex flex-wrap items-center justify-center gap-3">
-                    <a href={result.url} download={result.fileName} className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm shadow-xl shadow-blue-600/30 hover:scale-105 transition-all">
+                    <button type="button" onClick={handleDownload} className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm shadow-xl shadow-blue-600/30 hover:scale-105 transition-all">
                         <Download className="w-4 h-4" />
                         <span>Unduh File PDF</span>
-                    </a>
-                    <button type="button" onClick={resetTool} className="px-5 py-3 rounded-2xl bg-[#211d42] border border-purple-500/30 text-purple-200 text-xs sm:text-sm font-semibold hover:bg-[#282450] transition-colors">
-                        Konversi Dokumen Lain
                     </button>
+                    <button type="button" onClick={resetTool} className="px-5 py-3 rounded-2xl bg-[#211d42] border border-purple-500/30 text-purple-200 text-xs sm:text-sm font-semibold hover:bg-[#282450] transition-colors"> Konversi Dokumen Lain </button>
                 </div>
             </div>
         )}

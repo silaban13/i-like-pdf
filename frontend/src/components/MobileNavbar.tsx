@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { ActiveTab } from '../types';
-import {Sun, Moon, HelpCircle, User as Menu, X,} from 'lucide-react';
+import { Sun, Moon, HelpCircle, Menu, X } from 'lucide-react';
 
 interface MobileNavbarProps {
     activeTab: ActiveTab;

@@ -80,34 +80,31 @@ export const PDFtoWord: React.FC<PdfToWordToolProps> = ({ currentUser, initialFi
   };
 
 
+  
   const handleDownload = async () => {
-    if (!result) return;
-    const fileUrl = result.url;
-    const fileName = result.fileName;
-    const link = document.createElement('a');
+      if (!result) return;
+      const fileUrl = result.url;
+      const fileName = result.fileName;
+      const link = document.createElement('a');
       link.href = fileUrl;
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
       link.remove();
+      setResult(null);
+      setFile(null);
+      setError(null);
+      window.setTimeout(() => {
+          URL.revokeObjectURL(fileUrl);
+      }, 1000);
 
-    setResult(null);
-    setFile(null);
-    setError(null);
-
-    window.setTimeout(() => {
-      URL.revokeObjectURL(fileUrl);
-    }, 1000);
-
-    try {
-      await deleteConvertedFile(fileName);
-    } catch (err) {
-      console.error('Gagal menghapus file hasil di server:', err);
-      setError(
-        'File sudah diunduh, tetapi file hasil di server gagal dihapus.'
-      );
-    }
+      try {
+          await deleteConvertedFile(fileName);
+      } catch (err) {
+          console.error('Gagal menghapus file hasil di server:', err);
+      }
   };
+
 
   const resetTool = () => {
     setFile(null);

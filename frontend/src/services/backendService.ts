@@ -30,20 +30,18 @@ async function requestJson<T>(url: string, options?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-// Upload DOC/DOCX ke Laravel.
 export async function uploadWordFile(file: File): Promise<ApiResponse> {
   const formData = new FormData();
   formData.append('file', file);
-
   return requestJson<ApiResponse>(`${API_BASE_URL}/upload`, {
     method: 'POST',
     body: formData,
   });
 }
 
-// Konversi Word yang sudah diupload menjadi PDF.
 export async function convertWordToPdf(
-  filePath: string
+  filePath: string,
+  fileName: string
 ): Promise<ApiResponse> {
   return requestJson<ApiResponse>(`${API_BASE_URL}/convert`, {
     method: 'POST',
@@ -51,11 +49,13 @@ export async function convertWordToPdf(
       'Content-Type': 'application/json',
       Accept: 'application/json',
     },
-    body: JSON.stringify({ file_path: filePath }),
+    body: JSON.stringify({
+      file_path: filePath,
+      file_name: fileName,
+    }),
   });
 }
 
-// Konversi PDF menjadi DOCX.
 export async function convertPdfToWordOnServer(
   file: File
 ): Promise<ApiResponse> {
@@ -68,7 +68,6 @@ export async function convertPdfToWordOnServer(
   });
 }
 
-// Download hasil konversi dari server.
 export async function downloadConvertedFile(
   filename: string
 ): Promise<Blob> {
@@ -84,7 +83,6 @@ export async function downloadConvertedFile(
   return response.blob();
 }
 
-// Hapus hasil konversi dari server.
 export async function deleteConvertedFile(
   filename: string
 ): Promise<ApiResponse> {
@@ -94,7 +92,6 @@ export async function deleteConvertedFile(
   );
 }
 
-// Hapus file sementara berdasarkan nama file di server.
 export async function deleteTemporaryFile(
   filename: string
 ): Promise<ApiResponse> {
